@@ -1,0 +1,50 @@
+<h1 id="sstv-txrx-with-a-pi-and-an-rtl-sdr">SSTV Tx/Rx with a Pi and an RTL-SDR</h1>
+<p>It turns out that transmitting and receiving SSTV signals is pretty easy, using just a raspberry pi as a transmitter and an <a href="http://www.rtl-sdr.com/">RTL-SDR</a> as a receiver. There are a few programs which you'll need to install before you begin:</p>
+<ul>
+<li><p><a href="https://github.com/F5OEO/rpitx">rpitx</a> includes tools for encoding and transmitting SSTV signals with a raspberry pi. This should be installed on the pi itself.</p></li>
+<li><p><a href="http://gqrx.dk/">gqrx</a> is a graphically controlled SDR program, which will be used for receiving and recording the SSTV signals. Put this on whatever computer your SDR is hooked up to.</p></li>
+<li><p><a href="http://users.telenet.be/on4qz/qsstv/index.html">qsstv</a> is an open source cross-platform SSTV decoder which can decode directly from recorded audio.</p></li>
+<li><p><a href="http://www.imagemagick.org/script/index.php">imagemagick</a> will be used for converting images to a format rpitx can understand.</p></li>
+</ul>
+<p>If you're on linux, the last three may be available in your distribution's package repositories; make sure to check those before wasting time downloading and installing them manually.</p>
+<p>Additionally, be aware that this may not work with the Raspberry Pi 2 or 3. Stick with a Pi A/B/B+ for best results. A Pi Zero may also work, but I haven't tested that.</p>
+<h1 id="transmitting-sstv">Transmitting SSTV</h1>
+<p>1. Resize your image to 320x256 pixels. I did this by cropping my image with imagemagick. This commands will resize, maintaing aspect ratio of the input, and then crop the result to get to 320x256 pixels:</p>
+<pre><code>convert &lt;input&gt; -resize &#39;320x256^&#39; -gravity center -extent 320x256 &lt;output&gt;</code></pre>
+<p>2. Convert your image to an 8 bit depth RGB file.</p>
+<pre><code>convert -depth 8 &lt;input&gt; &lt;output&gt;.rgb</code></pre>
+<p>This step can be combined with the previous step.</p>
+<pre><code>convert &lt;input&gt; -resize &#39;320x256^&#39; -gravity center -extent 320x256 -depth 8 &lt;output&gt;.rgb</code></pre>
+<p>3. Convert the rgb file to a .st file for rpitx, using the included tool.</p>
+<pre><code>pisstv &lt;input&gt;.rgb &lt;output&gt;.ft</code></pre>
+<p>4. Broadcast with rpitx</p>
+<pre><code>sudo rpitx -m RF -i &lt;input&gt;.ft -f &lt;frequency in KHz&gt;</code></pre>
+<h1 id="receiving-sstv">Receiving SSTV</h1>
+<p>Capturing and recording signals will be done with GQRX. SSTV decoding will then be done afterwards with qsstv.</p>
+<h2 id="recording-with-gqrx">Recording with GQRX</h2>
+<p>1. Open GQRX. Tune to the frequency you're transmitting on</p>
+<p>2. Set your decode mode to USB, and drag your filter width to 3 k.</p>
+<p>3. Begin transmitting from your Raspberry PI. We won't decode this initial broadcast. Instead we'll be using it to properly tune our receiver.</p>
+<p>4. Center your decode filter area over the signal seen in the waterfall. You should have something which looks similar to the image below.</p>
+<div class="figure">
+<img src="/img/rpitx_sstv/gqrx_view.jpg" title="GQRX Setup" style="width: 100%" />
+
+</div>
+<p>5. Adjust your audio gain in the bottom right to be be audible. Hit &quot;Rec&quot;, and then restart your SSTV transmission. Audio will be recorded to a wav file in your home folder. Stop the recording after your SSTV transmission completes.</p>
+<h2 id="decoding-with-qsstv">Decoding with QSSTV</h2>
+<p>1. Open up QSSTV. Navigate to Options -&gt; Configure. Go to the &quot;Sound&quot; tab, and set the sound input to &quot;From file&quot;.</p>
+<div class="figure">
+<img src="/img/rpitx_sstv/qsstv_sound_config.jpg" title="QSSTV Sound Configuration" style="width: 100%" />
+
+</div>
+<p>2. Go back to the main QSSTV screen. Configure your SSTV settings to match the image below.</p>
+<div class="figure">
+<img src="/img/rpitx_sstv/qsstv_sstv_config.jpg" title="SSTV Configuration" />
+
+</div>
+<p>3. Click the &quot;play button&quot; icon in the top left corner. You'll be prompted to select a wav file to decode. Navigate to your GQRX recording and select it.</p>
+<p>4. Wait. Decoding may take some time and appear to freeze , but if all goes well you should have a fully decoded SSTV signal.</p>
+<div class="figure">
+<img src="/img/rpitx_sstv/qsstv_decoded_image.jpg" title="QSSTV Decoded Image" style="width: 100%" />
+
+</div>
