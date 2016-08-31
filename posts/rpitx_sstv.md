@@ -28,12 +28,15 @@ Additionally, be aware that this may not work with the Raspberry Pi 2 or 3.
 Stick with a Pi A/B/B+ for best results. A Pi Zero may also work, but I haven't
 tested that.
 
+Scroll to the bottom for a demo video of GQRX and QSSTV in action, using the
+realtime decoding technique described towards the bottom of the post.
+
 
 Transmitting SSTV
 =================
 
 1\. Resize your image to 320x256 pixels. I did this by cropping my image with
-    imagemagick. This commands will resize, maintaing aspect ratio of the input,
+    imagemagick. This command will resize, maintaining aspect ratio of the input,
     and then crop the result to get to 320x256 pixels:
 
     convert <input> -resize '320x256^' -gravity center -extent 320x256 <output>
@@ -110,3 +113,52 @@ Decoding with QSSTV
 
    ![](/img/rpitx_sstv/qsstv_decoded_image.jpg "QSSTV Decoded Image"){ style="width: 100%" }
 
+
+Realtime Decoding
+=================
+
+It's actually possible to decode SSTV data in real time with a slight
+modification to the recording and decoding process! You'll need to install
+netcat and sox for this to work.
+
+1\. In GQRX, select the "UDP" option instead of the "Rec" option. This will
+    make GQRX send audio data as 1-channel raw pcm s16le data over UDP to some
+    address. The default address is localhost on port 7355, but you can
+    configure that by clicking the "..." button next to "Play".
+
+2\. Now we need to make a
+    [FIFO](http://man7.org/linux/man-pages/man7/fifo.7.html) for QSSTV to read
+    from. Since QSSTV looks in $HOME/audio for files by default, that's where
+    I put mine, but you can put it anywhere.
+
+    mkfifo $HOME/audio/realtime
+
+3\. Use the following command to listen for data from GQRX and write it to the
+    FIFO as it's received. The command will stop after you turn QSSTV's decoder
+    off, but you can pause/unpause/restart GQRX as much as you want with no
+    problems while this is running.
+
+    netcat -l -u localhost -p 7355 \
+        | sox -r 48000 -e signed -b 16 -c 1 -t raw - -t wav - \
+        > $HOME/audio/realtime
+
+4\. In QSSTV, click the "play button" icon as before, and select the "realtime"
+    file for playback. The file size will show up as 0 bytes, that's normal, but
+    at this point QSSTV should be receiving data. and displaying it in its
+    waterfall on the right hand side of the screen.
+
+
+Demo
+====
+
+Here's a demo video of the process. Notice how QSSTV has three red bars. When
+the decode initializes, the lowest tone should peak at the left red bar, and the
+highest tone should peak at the right red bar. If they're significantly off from
+where they should be, and you aren't getting an image decode (or the image
+looks wrong), that's how you know you need to adjust your tuning a bit more.
+
+<video width="1368" controls style="width:100%">
+<source src="/vid/rpitx_sstv/qsstv_demo.webm" type="video/webm">
+<source src="/vid/rpitx_sstv/qsstv_demo.mp4" type="video/mp4">
+Your browser doesn't support HTML5 video tag, or you have it disabled.
+</video>
