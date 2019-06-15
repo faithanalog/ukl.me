@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-./makeIndex 5 > ./public/index.html
-./makeIndex all > ./public/posts.html
